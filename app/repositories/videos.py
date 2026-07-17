@@ -1,7 +1,7 @@
 from sqlmodel import Session, select
 
-from app.config.database import Videos
-from app.model.schema.videos import VideoCreate
+from app.config.database import Snippets, Videos
+from app.model.schema.videos import VideoCreate, SnippetCreate
 
 
 class VideoRepository():
@@ -12,7 +12,14 @@ class VideoRepository():
         return self.session.exec(select(Videos)).all()
 
     def add_video(self, payload: VideoCreate):
-        self.session.add(payload)
+        video = Videos(**payload.model_dump())
+        self.session.add(video)
         self.session.commit()
-        self.session.refresh(payload)
-        return
+        self.session.refresh(video)
+        return video
+
+    def add_snippets(self, snippets: list[SnippetCreate]):
+        db_snippets = [Snippets(**s.model_dump()) for s in snippets]
+        self.session.add_all(db_snippets)
+        self.session.commit()
+        return db_snippets

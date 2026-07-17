@@ -13,6 +13,16 @@ class Videos(SQLModel, table=True):
     description: str | None = None
 
 
+class Snippets(SQLModel, table=True):
+
+    id: int | None = Field(default=None, primary_key=True)
+    text: str
+    start: float | None = None
+    duration: float | None = None
+
+    video_id: int = Field(foreign_key="videos.id")
+
+
 sqlite_file_name = "database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
