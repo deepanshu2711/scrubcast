@@ -17,3 +17,9 @@ def get_all_videos(session: SessionDep):
 def submit_video(payload: VideoCreate, session: SessionDep):
     service = VideosService(session)
     return service.add_video(payload)
+
+
+@router.post('/snippets/:video_id')
+def get_video_snippets(video_id: int, session: SessionDep):
+    service = VideosService(session)
+    return service.get_snippets(video_id)

@@ -23,3 +23,7 @@ class VideoRepository():
         self.session.add_all(db_snippets)
         self.session.commit()
         return db_snippets
+
+    def get_snippets(self, video_id: int):
+        statement = select(Snippets).where(Snippets.video_id == video_id)
+        return self.session.exec(statement).all()

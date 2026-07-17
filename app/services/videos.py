@@ -26,3 +26,6 @@ class VideosService:
         ]
         self.repository.add_snippets(snippets)
         return
+
+    def get_snippets(self, video_id: int):
+        return self.repository.get_snippets(video_id)
