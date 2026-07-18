@@ -1,9 +1,9 @@
+from qdrant_client.models import FieldCondition, Filter, MatchValue
 from sqlmodel import Session
-from langchain_core.documents import Document
-from langchain_qdrant import QdrantVectorStore
-from app.config.qdrant import client
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from app.config.embedding import embedding_model
+from app.config.llm import llm
+from app.config.store import vector_store
 from app.repositories.chat import ChatRepository
 
 
@@ -13,26 +13,42 @@ class ChatService:
 
     def initiate_chat(self, video_id: int):
         snippets = self.repository.get_snippets(video_id)
+        transcript = "\n".join(snippet.text for snippet in snippets)
 
-        docs = []
-
-        for snippet in snippets:
-            docs.append(
-                Document(
-                    page_content=snippet.text,
-                    metadata={
-                        "video_id": snippet.video_id,
-                        "start": snippet.start,
-                        "duration": snippet.duration,
-                    }
-                )
-            )
-        print('docs:', docs)
-
-        vector_store = QdrantVectorStore(
-            client=client, collection_name="videos", embedding=embedding_model
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=500,
+            chunk_overlap=100,
+        )
+        docs = splitter.create_documents(
+            [transcript],
+            metadatas=[{"video_id": video_id}],
         )
 
         vector_store.add_documents(docs)
-
         return
+
+    def ask_question(self, video_id: int, question: str):
+        result = vector_store.similarity_search(
+            query=question,
+            k=3,
+            filter=Filter(
+                must=[
+                    FieldCondition(
+                        key="metadata.video_id",
+                        match=MatchValue(value=video_id)
+                    )
+                ]
+            )
+        )
+
+        context = "\n".join([doc.page_content for doc in result])
+        prompt = f"""Answer the question based on the context below:
+        Context: {context}
+        Question: {question}
+        Answer:"""
+
+        response = llm.invoke(prompt)
+        return response
+
+
+#
