@@ -1,9 +1,9 @@
-from qdrant_client.models import FieldCondition, Filter, MatchValue
 from sqlmodel import Session
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from app.config.llm import llm
 from app.config.store import vector_store
+from app.graph.rag_graph import rag_graph
+from app.graph.state import RAGState
 from app.repositories.chat import ChatRepository
 
 
@@ -28,27 +28,15 @@ class ChatService:
         return
 
     def ask_question(self, video_id: int, question: str):
-        result = vector_store.similarity_search(
-            query=question,
-            k=3,
-            filter=Filter(
-                must=[
-                    FieldCondition(
-                        key="metadata.video_id",
-                        match=MatchValue(value=video_id)
-                    )
-                ]
-            )
-        )
+        initial_state: RAGState = {
+            "video_id": video_id,
+            "question": question,
+            "rewritten_question": "",
+            "documents": [],
+            "generation": "",
+            "retry_count": 0,
+            "grade": "no"
+        }
 
-        context = "\n".join([doc.page_content for doc in result])
-        prompt = f"""Answer the question based on the context below:
-        Context: {context}
-        Question: {question}
-        Answer:"""
-
-        response = llm.invoke(prompt)
-        return response.content
-
-
-#
+        result = rag_graph.invoke(initial_state)
+        return result['generation']
