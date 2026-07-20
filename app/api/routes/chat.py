@@ -13,6 +13,7 @@ def start_chat(video_id: int, session: SessionDep):
     return service.initiate_chat(video_id)
 
 
+# This is ask route
 @router.post('/ask/{video_id}')
 def ask_question(video_id: int, body: AskQuestion, session: SessionDep):
     service = ChatService(session)
